@@ -3,7 +3,7 @@ from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import CommandStart
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-BOT_TOKEN = "8449897374:AAFWjG3tHiwt6cveCvF87WMQRqjNwNVbjNA"
+BOT_TOKEN = "8802350627:AAHKthY6exG1vR-woBxib5jctnnIK5-L_Nk"
 CHANNEL_URL = "https://t.me/ScriptWare_s"
 SCRIPT_KEY = "Release"
 
