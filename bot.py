@@ -1,11 +1,15 @@
 import asyncio
-from aiogram import Bot, Dispatcher, types, F
+import logging
+from aiogram import Bot, Dispatcher, types, F, html
 from aiogram.filters import CommandStart
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-BOT_TOKEN = "8802350627:AAHKthY6exG1vR-woBxib5jctnnIK5-L_Nk"
+BOT_TOKEN = "8938367602:AAHK5WxE5nqk9m0Aag_18Nofk4Hf3AMrcWg"
+
 CHANNEL_URL = "https://t.me/ScriptWare_s"
 SCRIPT_KEY = "Release"
+
+logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -20,10 +24,10 @@ def get_main_keyboard():
 
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
-    first_name = types.html.quote(message.from_user.first_name)
+    first_name = html.quote(message.from_user.first_name)
     welcome_text = (
         f"👋 Привет, <b>{first_name}</b>!\n\n"
-        "Добро пожаловать в официальный бот <b>Doorware Hub</b>.\n"
+        "Добро пожаловать в <b>Doorware Hub</b>.\n"
         "Здесь ты можешь получить актуальный ключ доступа к скрипту."
     )
     await message.answer(welcome_text, reply_markup=get_main_keyboard(), parse_mode="HTML")
@@ -39,6 +43,7 @@ async def process_get_key(callback: types.CallbackQuery):
     await callback.answer()
 
 async def main():
+    await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
