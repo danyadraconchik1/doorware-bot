@@ -5,7 +5,7 @@ from aiogram import Bot, Dispatcher, types, F, html
 from aiogram.filters import CommandStart
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
-from aiogram.exceptions import TelegramBadRequest
+from aiogram.exceptions import TelegramBadRequest, TelegramAPIError
 
 # Оновлений токен бота
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8938367602:AAFkAuYGzU6rsqvDsSn-1oE3AAc-DtFiHJY")
@@ -46,14 +46,10 @@ TEXTS = {
     }
 }
 
-# Строга перевірка підписки
 async def check_subscription(user_id: int) -> bool:
     try:
         member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
         return member.status in ["creator", "administrator", "member"]
-    except TelegramBadRequest as e:
-        logging.error(f"Бот не адмін у каналі або канал вказано невірно: {e}")
-        return False
     except Exception as e:
         logging.error(f"Помилка перевірки підписки: {e}")
         return False
@@ -87,68 +83,86 @@ def get_sub_keyboard(lang: str):
 
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
-    await message.answer(
-        "🌐 <b>Выберите язык / Choose language:</b>",
-        reply_markup=get_language_keyboard(),
-        parse_mode="HTML"
-    )
+    try:
+        await message.answer(
+            "🌐 <b>Выберите язык / Choose language:</b>",
+            reply_markup=get_language_keyboard(),
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        logging.error(f"Помилка в cmd_start: {e}")
 
 @dp.callback_query(F.data.startswith("lang_"))
 async def process_language_choice(callback: types.CallbackQuery, state: FSMContext):
-    lang = callback.data.split("_")[1]
-    await state.update_data(lang=lang)
-    
-    first_name = html.quote(callback.from_user.first_name)
-    welcome_text = TEXTS[lang]["welcome"].format(name=first_name)
-    
-    await callback.message.edit_text(
-        welcome_text,
-        reply_markup=get_main_keyboard(lang),
-        parse_mode="HTML"
-    )
-    await callback.answer()
+    try:
+        lang = callback.data.split("_")[1]
+        await state.update_data(lang=lang)
+        
+        first_name = html.quote(callback.from_user.first_name or "User")
+        welcome_text = TEXTS[lang]["welcome"].format(name=first_name)
+        
+        await callback.message.edit_text(
+            welcome_text,
+            reply_markup=get_main_keyboard(lang),
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        logging.error(f"Помилка вибору мови: {e}")
+    finally:
+        await callback.answer()
 
 @dp.callback_query(F.data == "change_lang")
 async def process_change_lang(callback: types.CallbackQuery):
-    await callback.message.edit_text(
-        "🌐 <b>Выберите язык / Choose language:</b>",
-        reply_markup=get_language_keyboard(),
-        parse_mode="HTML"
-    )
-    await callback.answer()
+    try:
+        await callback.message.edit_text(
+            "🌐 <b>Выберите язык / Choose language:</b>",
+            reply_markup=get_language_keyboard(),
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        logging.error(f"Помилка зміні мови: {e}")
+    finally:
+        await callback.answer()
 
 @dp.callback_query(F.data == "get_key")
 async def process_get_key(callback: types.CallbackQuery, state: FSMContext):
-    user_data = await state.get_data()
-    lang = user_data.get("lang", "ru")
+    try:
+        user_data = await state.get_data()
+        lang = user_data.get("lang", "ru")
 
-    is_subscribed = await check_subscription(callback.from_user.id)
+        is_subscribed = await check_subscription(callback.from_user.id)
 
-    if is_subscribed:
-        key_text = TEXTS[lang]["key_msg"].format(key=SCRIPT_KEY)
-        await callback.message.answer(key_text, parse_mode="HTML")
-    else:
-        await callback.message.answer(
-            TEXTS[lang]["sub_required"],
-            reply_markup=get_sub_keyboard(lang),
-            parse_mode="HTML"
-        )
-    
-    await callback.answer()
+        if is_subscribed:
+            key_text = TEXTS[lang]["key_msg"].format(key=SCRIPT_KEY)
+            await callback.message.answer(key_text, parse_mode="HTML")
+        else:
+            await callback.message.answer(
+                TEXTS[lang]["sub_required"],
+                reply_markup=get_sub_keyboard(lang),
+                parse_mode="HTML"
+            )
+    except Exception as e:
+        logging.error(f"Помилка отримання ключа: {e}")
+    finally:
+        await callback.answer()
 
 @dp.callback_query(F.data == "check_sub")
 async def process_check_sub(callback: types.CallbackQuery, state: FSMContext):
-    user_data = await state.get_data()
-    lang = user_data.get("lang", "ru")
+    try:
+        user_data = await state.get_data()
+        lang = user_data.get("lang", "ru")
 
-    is_subscribed = await check_subscription(callback.from_user.id)
+        is_subscribed = await check_subscription(callback.from_user.id)
 
-    if is_subscribed:
-        await callback.answer("✅ Подписка подтверждена / Subscription confirmed!")
-        key_text = TEXTS[lang]["key_msg"].format(key=SCRIPT_KEY)
-        await callback.message.edit_text(key_text, parse_mode="HTML")
-    else:
-        await callback.answer(TEXTS[lang]["sub_error"], show_alert=True)
+        if is_subscribed:
+            await callback.answer("✅ Подписка подтверждена / Subscription confirmed!")
+            key_text = TEXTS[lang]["key_msg"].format(key=SCRIPT_KEY)
+            await callback.message.edit_text(key_text, parse_mode="HTML")
+        else:
+            await callback.answer(TEXTS[lang]["sub_error"], show_alert=True)
+    except Exception as e:
+        logging.error(f"Помилка перевірки підписки: {e}")
+        await callback.answer()
 
 async def main():
     try:
