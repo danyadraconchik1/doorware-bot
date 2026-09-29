@@ -8,7 +8,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramBadRequest
 
 # Токен береться зі змінних оточення Railway (Environment Variables)
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8938367602:AAHK5WxE5nqk9m0Aag_18Nofk4Hf3AMrcWg")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8938367602:AAEtzFvfhzwkxw8ug_iilulZ8Cmev2eW8XQ")
 
 CHANNEL_ID = "@ScriptWare_s"
 CHANNEL_URL = "https://t.me/ScriptWare_s"
