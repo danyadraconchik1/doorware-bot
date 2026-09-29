@@ -7,7 +7,8 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramBadRequest
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8938367602:AAEtzFvfhzwkxw8ug_iilulZ8Cmev2eW8XQ")
+# Оновлений токен бота
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8938367602:AAFkAuYGzU6rsqvDsSn-1oE3AAc-DtFiHJY")
 
 CHANNEL_ID = "@ScriptWare_s"
 CHANNEL_URL = "https://t.me/ScriptWare_s"
@@ -45,16 +46,16 @@ TEXTS = {
     }
 }
 
-# Строгая проверка подписки
+# Строга перевірка підписки
 async def check_subscription(user_id: int) -> bool:
     try:
         member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
         return member.status in ["creator", "administrator", "member"]
     except TelegramBadRequest as e:
-        logging.error(f"Бот не админ в канале или канал указан неверно: {e}")
+        logging.error(f"Бот не адмін у каналі або канал вказано невірно: {e}")
         return False
     except Exception as e:
-        logging.error(f"Ошибка проверки подписки: {e}")
+        logging.error(f"Помилка перевірки підписки: {e}")
         return False
 
 def get_language_keyboard():
@@ -160,4 +161,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except (KeyboardInterrupt, SystemExit):
-        logging.info("Бот остановлен.")
+        logging.info("Бот зупинений.")
