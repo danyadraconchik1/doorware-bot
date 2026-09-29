@@ -7,10 +7,9 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramBadRequest
 
-# Токен береться зі змінних оточення Render або використовується за замовчуванням
+# Токен береться зі змінних оточення Railway (Environment Variables)
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8938367602:AAHK5WxE5nqk9m0Aag_18Nofk4Hf3AMrcWg")
 
-# Твій канал
 CHANNEL_ID = "@ScriptWare_s"
 CHANNEL_URL = "https://t.me/ScriptWare_s"
 SCRIPT_KEY = "Release"
@@ -20,7 +19,6 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# Тексти для двох мов
 TEXTS = {
     "ru": {
         "welcome": "👋 Привет, <b>{name}</b>!\n\nДобро пожаловать в <b>Doorware Hub</b>.\nЗдесь ты можешь получить актуальный ключ доступа к скрипту.",
@@ -46,19 +44,23 @@ TEXTS = {
     }
 }
 
-# Перевірка підписки на твій канал
 async def check_subscription(user_id: int) -> bool:
     try:
         member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
-        return member.status in ["creator", "administrator", "member"]
-    except TelegramBadRequest:
-        # Якщо бот ще не доданий в адміни каналу — пропускаємо, щоб бот не падав
-        return True
+        logging.info(f"User {user_id} status in {CHANNEL_ID}: {member.status}")
+        
+        # Перевірка: користувач має бути творцем, адміном або підписником
+        if member.status in ["creator", "administrator", "member"]:
+            return True
+        else:
+            return False
+    except TelegramBadRequest as e:
+        logging.error(f"TelegramBadRequest: Переконайся, що бот є адміном у {CHANNEL_ID}. Помилка: {e}")
+        return False
     except Exception as e:
-        logging.error(f"Помилка перевірки підписки: {e}")
+        logging.error(f"Помилка перевірки підписки для {user_id}: {e}")
         return False
 
-# Клавіатура опитування (вибір мови) з двома мовами на кнопках
 def get_language_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -69,7 +71,6 @@ def get_language_keyboard():
         ]
     )
 
-# Головне меню після вибору мови
 def get_main_keyboard(lang: str):
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -79,7 +80,6 @@ def get_main_keyboard(lang: str):
         ]
     )
 
-# Клавіатура підписки на твій канал
 def get_sub_keyboard(lang: str):
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -88,7 +88,6 @@ def get_sub_keyboard(lang: str):
         ]
     )
 
-# Старт — СРАЗУ опитування з вибором мови
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
     await message.answer(
@@ -97,7 +96,6 @@ async def cmd_start(message: types.Message):
         parse_mode="HTML"
     )
 
-# Обробка вибору мови
 @dp.callback_query(F.data.startswith("lang_"))
 async def process_language_choice(callback: types.CallbackQuery, state: FSMContext):
     lang = callback.data.split("_")[1]
@@ -113,7 +111,6 @@ async def process_language_choice(callback: types.CallbackQuery, state: FSMConte
     )
     await callback.answer()
 
-# Кнопка зміни мови
 @dp.callback_query(F.data == "change_lang")
 async def process_change_lang(callback: types.CallbackQuery):
     await callback.message.edit_text(
@@ -123,7 +120,6 @@ async def process_change_lang(callback: types.CallbackQuery):
     )
     await callback.answer()
 
-# Натискання «Отримати ключ»
 @dp.callback_query(F.data == "get_key")
 async def process_get_key(callback: types.CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
@@ -143,7 +139,6 @@ async def process_get_key(callback: types.CallbackQuery, state: FSMContext):
     
     await callback.answer()
 
-# Натискання «Перевірити підписку»
 @dp.callback_query(F.data == "check_sub")
 async def process_check_sub(callback: types.CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
