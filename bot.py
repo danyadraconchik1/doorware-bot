@@ -1,3 +1,4 @@
+import os
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher, types, F, html
@@ -6,8 +7,11 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramBadRequest
 
-BOT_TOKEN = "8938367602:AAHK5WxE5nqk9m0Aag_18Nofk4Hf3AMrcWg"
-CHANNEL_ID = "@ScriptWare_s"  # Юзернейм канала для проверки подписки
+# Токен береться зі змінних оточення Render або використовується за замовчуванням
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8938367602:AAHK5WxE5nqk9m0Aag_18Nofk4Hf3AMrcWg")
+
+# Твій канал
+CHANNEL_ID = "@ScriptWare_s"
 CHANNEL_URL = "https://t.me/ScriptWare_s"
 SCRIPT_KEY = "Release"
 
@@ -16,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# Тексты на двух языках
+# Тексти для двох мов
 TEXTS = {
     "ru": {
         "welcome": "👋 Привет, <b>{name}</b>!\n\nДобро пожаловать в <b>Doorware Hub</b>.\nЗдесь ты можешь получить актуальный ключ доступа к скрипту.",
@@ -25,7 +29,7 @@ TEXTS = {
         "btn_lang": "🌐 Сменить язык / Change language",
         "key_msg": "🔑 <b>Твой ключ для Doorware:</b>\n\n<code>{key}</code>\n\n📌 <i>Нажми на ключ, чтобы скопировать его, и вставь в окно скрипта в игре!</i>",
         "sub_required": "⚠️ <b>Для получения ключа необходимо подписаться на наш канал!</b>\n\nПожалуйста, подпишитесь на канал ниже и нажмите кнопку «Проверить подписку».",
-        "btn_sub": "📢 Подписаться на канал",
+        "btn_sub": "📢 Подписаться на ScriptWare",
         "btn_check_sub": "✅ Проверить подписку",
         "sub_error": "❌ Вы всё ещё не подписались на канал! Попробуйте снова."
     },
@@ -36,36 +40,36 @@ TEXTS = {
         "btn_lang": "🌐 Change language / Сменить язык",
         "key_msg": "🔑 <b>Your key for Doorware:</b>\n\n<code>{key}</code>\n\n📌 <i>Click on the key to copy it, then paste it into the script in-game!</i>",
         "sub_required": "⚠️ <b>You must subscribe to our channel to get the key!</b>\n\nPlease subscribe to the channel below and click the \"Check subscription\" button.",
-        "btn_sub": "📢 Subscribe to Channel",
+        "btn_sub": "📢 Subscribe to ScriptWare",
         "btn_check_sub": "✅ Check Subscription",
         "sub_error": "❌ You are still not subscribed to the channel! Please try again."
     }
 }
 
-# Функция проверки подписки
+# Перевірка підписки на твій канал
 async def check_subscription(user_id: int) -> bool:
     try:
         member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
         return member.status in ["creator", "administrator", "member"]
     except TelegramBadRequest:
-        # Если бот не админ в канале или канал не найден, пропускаем проверку во избежание падения
+        # Якщо бот ще не доданий в адміни каналу — пропускаємо, щоб бот не падав
         return True
     except Exception as e:
-        logging.error(f"Ошибка проверки подписки: {e}")
+        logging.error(f"Помилка перевірки підписки: {e}")
         return False
 
-# Клавиатура выбора языка
+# Клавіатура опитування (вибір мови) з двома мовами на кнопках
 def get_language_keyboard():
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [
-                InlineKeyboardButton(text="🇷🇺 Русский", callback_data="lang_ru"),
-                InlineKeyboardButton(text="🇬🇧 English", callback_data="lang_en")
+                InlineKeyboardButton(text="🇷🇺 Русский / RU", callback_data="lang_ru"),
+                InlineKeyboardButton(text="🇬🇧 English / EN", callback_data="lang_en")
             ]
         ]
     )
 
-# Главное меню
+# Головне меню після вибору мови
 def get_main_keyboard(lang: str):
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -75,7 +79,7 @@ def get_main_keyboard(lang: str):
         ]
     )
 
-# Клавиатура для подписки
+# Клавіатура підписки на твій канал
 def get_sub_keyboard(lang: str):
     return InlineKeyboardMarkup(
         inline_keyboard=[
@@ -84,7 +88,7 @@ def get_sub_keyboard(lang: str):
         ]
     )
 
-# Старт — выбор языка
+# Старт — СРАЗУ опитування з вибором мови
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
     await message.answer(
@@ -93,7 +97,7 @@ async def cmd_start(message: types.Message):
         parse_mode="HTML"
     )
 
-# Выбор языка
+# Обробка вибору мови
 @dp.callback_query(F.data.startswith("lang_"))
 async def process_language_choice(callback: types.CallbackQuery, state: FSMContext):
     lang = callback.data.split("_")[1]
@@ -109,7 +113,7 @@ async def process_language_choice(callback: types.CallbackQuery, state: FSMConte
     )
     await callback.answer()
 
-# Нажатие на смену языка
+# Кнопка зміни мови
 @dp.callback_query(F.data == "change_lang")
 async def process_change_lang(callback: types.CallbackQuery):
     await callback.message.edit_text(
@@ -119,7 +123,7 @@ async def process_change_lang(callback: types.CallbackQuery):
     )
     await callback.answer()
 
-# Кнопка «Получить ключ»
+# Натискання «Отримати ключ»
 @dp.callback_query(F.data == "get_key")
 async def process_get_key(callback: types.CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
@@ -139,7 +143,7 @@ async def process_get_key(callback: types.CallbackQuery, state: FSMContext):
     
     await callback.answer()
 
-# Кнопка «Проверить подписку»
+# Натискання «Перевірити підписку»
 @dp.callback_query(F.data == "check_sub")
 async def process_check_sub(callback: types.CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
@@ -148,7 +152,7 @@ async def process_check_sub(callback: types.CallbackQuery, state: FSMContext):
     is_subscribed = await check_subscription(callback.from_user.id)
 
     if is_subscribed:
-        await callback.answer("✅ Подписка подтверждена!")
+        await callback.answer("✅ Подписка подтверждена / Subscription confirmed!")
         key_text = TEXTS[lang]["key_msg"].format(key=SCRIPT_KEY)
         await callback.message.edit_text(key_text, parse_mode="HTML")
     else:
