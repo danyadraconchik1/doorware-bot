@@ -7,7 +7,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramBadRequest
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8938367602:AAH1y_LAoNYzGgtDipsjwwS9oUOdm7Bx25A")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8938367602:AAEtzFvfhzwkxw8ug_iilulZ8Cmev2eW8XQ")
 
 CHANNEL_ID = "@ScriptWare_s"
 CHANNEL_URL = "https://t.me/ScriptWare_s"
@@ -150,8 +150,14 @@ async def process_check_sub(callback: types.CallbackQuery, state: FSMContext):
         await callback.answer(TEXTS[lang]["sub_error"], show_alert=True)
 
 async def main():
-    await bot.delete_webhook(drop_pending_updates=True)
-    await dp.start_polling(bot)
+    try:
+        await bot.delete_webhook(drop_pending_updates=True)
+        await dp.start_polling(bot)
+    finally:
+        await bot.session.close()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, SystemExit):
+        logging.info("Бот остановлен.")
